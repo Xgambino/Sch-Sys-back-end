@@ -1,37 +1,17 @@
-# message.py
+from flask import Blueprint, request, jsonify
+from models import db, Message
 
-from flask_socketio import join_room, leave_room, emit
-from socketio_manager import socketio
+message_blueprint = Blueprint('message', __name__)
 
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
-    emit('message', 'Welcome to the chat!')
+@message_blueprint.route('/messages', methods=['GET'])
+def get_messages():
+    messages = Message.query.all()
+    return jsonify([message.to_dict() for message in messages])
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
-
-@socketio.on('join')
-def handle_join(data):
-    room = data['room']
-    join_room(room)
-    emit('message', f"{data['username']} has entered the room.", room=room)
-
-@socketio.on('leave')
-def handle_leave(data):
-    room = data['room']
-    leave_room(room)
-    emit('message', f"{data['username']} has left the room.", room=room)
-
-@socketio.on('message')
-def handle_message(data):
-    room = data['room']
-    emit('message', data['message'], room=room)
-
-@socketio.on('get_history')
-def handle_get_history(data):
-    room = data['room']
-    # Here you can fetch and return the chat history for the room
-    history = []  # Replace with actual history retrieval logic
-    emit('history', history)
+@message_blueprint.route('/messages', methods=['POST'])
+def post_message():
+    data = request.json
+    new_message = Message(content=data['content'])
+    db.session.add(new_message)
+    db.session.commit()
+    return jsonify(new_message.to_dict()), 201

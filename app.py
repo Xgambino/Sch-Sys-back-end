@@ -1,20 +1,22 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from flask_cors import CORS
-from flask_migrate import Migrate
-from socketio_manager import socketio, init_socketio
+from flask_socketio import SocketIO
+from models import db
+from socketio_manager import socketio
+from message import message_blueprint
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your_secret_key'
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
 
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-CORS(app)
-migrate = Migrate(app, db)
-init_socketio(app)
+    app.register_blueprint(message_blueprint)
+
+    socketio.init_app(app)
+
+    return app
+
+app = create_app()
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
