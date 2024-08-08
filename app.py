@@ -14,11 +14,7 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 migrate = Migrate(app, db)
-
 init_socketio(app)
-
-# Import message after initializing Flask extensions
-from message import handle_connect, handle_disconnect, handle_join, handle_leave, handle_message, handle_get_history
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

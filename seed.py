@@ -1,23 +1,102 @@
-from app import app, db
-from models import User
+# seed.py
+
+from datetime import datetime, timedelta
+from flask import Flask
 from flask_bcrypt import generate_password_hash
+from models import db, User, LawyerDetails, Payment, Subscription, Case, Review, Message
+from socketio_manager import init_socketio
+
+# Create and configure the Flask app
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your_secret_key'
+
+# Initialize extensions
+db.init_app(app)
+init_socketio(app)
 
 def seed_data():
-    user1 = User(
-        username="User1",
-        password=generate_password_hash("password123").decode('utf-8')
-    )
-    user2 = User(
-        username="User2",
-        password=generate_password_hash("password123").decode('utf-8')
-    )
+    with app.app_context():
+        # Create users
+        user1 = User(
+            firstname="Charles",
+            lastname="Kibet",
+            id_no=12345679,
+            phone="0722222222",
+            email="charlesdoe@example.com",
+            password=generate_password_hash("password123").decode('utf-8'),
+            area_of_residence="Nairobi",
+            role="client"
+        )
+        user2 = User(
+            firstname="Lema",
+            lastname="Sam",
+            id_no=23456789,
+            phone="0723456788",
+            email="lemasmith@example.com",
+            password=generate_password_hash("password123").decode('utf-8'),
+            area_of_residence="Mombasa",
+            role="lawyer"
+        )
 
-    db.session.add_all([user1, user2])
-    db.session.commit()
+        # Create lawyer details
+        lawyer_details = LawyerDetails(
+            user_id=user2.id,
+            years_of_experience=5,
+            specialization="Criminal Law",
+            rate_per_hour=1500,
+            qualification_certificate=None
+        )
+
+        # Create subscription
+        subscription1 = Subscription(
+            user_id=user1.id,
+            payment_status="paid",
+            start_date=datetime.utcnow(),
+            end_date=datetime.utcnow() + timedelta(days=30)
+        )
+
+        # Create payments
+        payment1 = Payment(
+            user_id=user1.id,
+            subscription_id=subscription1.id,
+            amount=1000,
+            transaction_id="txn_123456",
+            status="completed"
+        )
+
+        # Create cases
+        case1 = Case(
+            user_id=user1.id,
+            lawyer_id=lawyer_details.id,
+            description="Case description here.",
+            court_date=datetime.utcnow() + timedelta(days=15),
+            status="active"
+        )
+
+        # Create reviews
+        review1 = Review(
+            user_id=user1.id,
+            lawyer_id=lawyer_details.id,
+            review="Excellent service!",
+            rating=5
+        )
+
+        # Create messages
+        message1 = Message(
+            user_id=user1.id,
+            message="Hello, I need assistance with my case.",
+            date=datetime.utcnow(),
+            sender_id=user1.id,
+            receiver_id=user2.id
+        )
+
+        # Check if users already exist before adding
+        if User.query.count() == 0:
+            db.session.add_all([user1, user2, lawyer_details, subscription1, payment1, case1, review1, message1])
+            db.session.commit()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if User.query.count() == 0:
-            seed_data()
-            print("Database seeded successfully!")
+    seed_data()
+    print("Database seeded successfully!")
